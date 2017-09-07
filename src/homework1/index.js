@@ -1,6 +1,5 @@
 import config from './config/config';
-import User from './models/user';
-import Product from './models/product';
+import { User, Product } from './models/index';
 
 console.log(config.name);
 let user = new User();
