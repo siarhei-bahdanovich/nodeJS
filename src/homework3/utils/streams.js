@@ -4,6 +4,7 @@ const through2 = require('through2');
 const pathModule = require('path');
 const https = require('https');
 const os = require('os');
+const csvToJson = require('./csvToJson');
 
 const runningAsScript = !module.parent;
 
@@ -72,9 +73,22 @@ function transformFile(filePath, output) {
 
     let outputStream = fs.createWriteStream(filePath.slice(0, -4) + '.json');
 
-    let reader = fs.createReadStream(filePath);
+    // create pipe with small chunk size
+    let reader = fs.createReadStream(filePath, { highWaterMark: 1024 });
+    let headers = null, buffer = [];
+
     let transformationStream = reader.pipe(through2(function (chunk, enc, callback) {
-      this.push(csvToJson(chunk.toString()));
+      let csvRows = chunk.toString().split('\n');
+      headers = headers || csvRows.shift().split(',');
+
+      csvRows[0] = (buffer.pop() || '') + csvRows[0];
+
+      let chunkIsValidCsv = chunk.toString().slice(-1) === '\n';
+      if (!chunkIsValidCsv) {
+        buffer.push(csvRows.pop());
+      }
+
+      this.push(csvToJson.convert(headers, csvRows));
       callback();
     }));
 
@@ -104,58 +118,47 @@ function cssBundle(path) {
       return;
     }
 
-    files = files.filter(file => file.split('.').pop() === 'css');
+    files = files.filter(file => file.split('.').pop() === 'css')
+      .map((file) => pathModule.join(path, file));
 
     if (files.length === 0) {
       console.log('No css files found in the directory ' + path);
     }
 
-    let reader;
     let outputStream = fs.createWriteStream(pathModule.join(path, 'bundle.css'));
-
-    files.forEach(function (file) {
-      reader = fs.createReadStream(pathModule.join(path, file));
-      reader.pipe(prepareCssContent(file), { end: false }).pipe(outputStream);
+    processFiles(files, outputStream, function () {
+      https.get(stylesLink, (res) => {
+        if (res.statusCode === 200) {
+          res.pipe(prepareCssContent(stylesLink)).pipe(outputStream);
+        }
+      });
     });
 
-    https.get(stylesLink, (res) => {
-      if (res.statusCode === 200) {
-        res.pipe(prepareCssContent(stylesLink)).pipe(outputStream);
-      }
-    });
   });
 };
 
+const processFiles = (files, outputStream, onComplete) => {
 
-// privates
-const csvToJson = function (csvString) {
-  // Split on row
-  csvString = csvString.split("\n");
-
-  // Get first row for column headers
-  let headers = csvString.shift().split(",");
-
-  let json = [];
-  csvString.forEach(function (d) {
-    // Loop through each row
-    let obj = {};
-    let row = d.split(",");
-    for (var i = 0; i < headers.length; i++) {
-      obj[headers[i]] = row[i];
+  var processFile = function (file) {
+    if (!file) {
+      return onComplete();
     }
-    // Add object to list
-    json.push(obj);
-  });
 
-  return JSON.stringify(json);
+    let inputStream = fs.createReadStream(file, { highWaterMark: 1024 });
+    inputStream.pipe(prepareCssContent(file), { end: false }).pipe(outputStream);
+    inputStream.on('end', () => {
+      outputStream.write(`${os.EOL}/*------------------End content from ${file}---------------------------------*/ ${os.EOL}`);
+      processFile(files.pop());
+    });
+  };
+
+  processFile(files.pop());
 };
 
 const prepareCssContent = (source) => {
   return through2(function (chunk, enc, callback) {
     console.log(`Appending content from ${source}`);
-    this.push(`${os.EOL}/*------------------Content from ${source}-----------*/ ${os.EOL}`);
     this.push(chunk);
-    this.push(`${os.EOL}/*---------------------------------------------------*/ ${os.EOL}`);
     callback();
   })
 };
