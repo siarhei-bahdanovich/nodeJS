@@ -1,0 +1,486 @@
+swagger: "2.0"
+info:
+  version: "0.0.1"
+  title: Hello World App
+# during dev, should point to your local machine
+host: localhost:10010
+# basePath prefixes all resource paths 
+basePath: /
+# 
+schemes:
+  # tip: remove http to make production-grade
+  - http
+  - https
+# format of bodies a client can send (Content-Type)
+consumes:
+  - application/json
+# format of the responses to the client (Accepts)
+produces:
+  - application/json
+tags:
+- name: auth
+  description: Authentication routes
+- name: cities
+  description: City routes
+- name: products
+  description: Product routes
+- name: users
+  description: User routes
+paths:
+  /auth/google:
+    x-swagger-router-controller: auth
+    get:
+      tags:
+      - auth
+      operationId: google
+      summary: Authenticate using google
+      description: Authenticate using google. Your google account must exist in the system.
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/AuthResponse'
+        400:
+          description: Invalid status value
+  /auth/twitter:
+    x-swagger-router-controller: auth
+    get:
+      operationId: twitter
+      tags:
+      - auth
+      summary: Authenticate using twitter
+      description: Authenticate using twitter. Your twitter account must exist in the system.
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/AuthResponse'
+        400:
+          description: Invalid status value
+          
+  /auth/facebook:
+    x-swagger-router-controller: auth
+    get:
+      operationId: facebook
+      tags:
+      - auth
+      summary: Authenticate using facebook
+      description: Authenticate using facebook. Your facebook account must exist in the system.
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/AuthResponse'
+        400:
+          description: Invalid status value
+          
+  /auth/local:
+    x-swagger-router-controller: auth
+    post:
+      operationId: local
+      tags:
+      - auth
+      summary: Authenticate using local strategy - user name and password
+      description: Authenticate using email and password.
+      produces:
+      - application/json
+      parameters:
+      - in: body
+        name: body
+        description: Object containing email and password
+        required: true
+        schema:
+          $ref: '#/definitions/EmailPassword'
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/AuthResponse'
+        400:
+          description: Invalid status value
+
+  /api/cities:
+    x-swagger-router-controller: cities
+    get:
+      operationId: getAllCities
+      tags:
+      - cities
+      summary: Get all cities
+      description: Lists all the cities available in the system
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/City'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+      
+    post:
+      operationId: createCity
+      tags:
+      - cities
+      summary: Create new city
+      description: Create new city
+      produces:
+      - application/json
+      parameters:
+      - name: city
+        in: body
+        description: City object
+        schema:
+            $ref: '#/definitions/City'
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/City'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+  /api/cities/{id}:
+    x-swagger-router-controller: cities
+    put:
+      operationId: updateCity
+      tags:
+      - cities
+      summary: Create/update city
+      description: Create new city or update existing one
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        description: ID of the city
+        type: string
+        in: path
+        required: true
+      - name: city
+        in: body
+        description: City object
+        schema:
+            $ref: '#/definitions/City'
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/City'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+      
+    delete:
+      operationId: deleteCity
+      tags:
+      - cities
+      summary: Delete city
+      description: Delete city by id
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: ID of the city
+        required: true
+        type: string
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/City'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+  /api/users:
+    x-swagger-router-controller: users
+    get:
+      operationId: getAllUsers
+      tags:
+      - users
+      summary: Get all users
+      description: Get all users
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        401:
+          description: Invalid status value
+      security:
+        - api_key: []
+
+  /api/users/{id}:
+    x-swagger-router-controller: users
+    delete:
+      operationId: deleteUser
+      tags:
+      - users
+      summary: Delete user
+      description: Delete user by id
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: ID of the user to delete
+        required: true
+        type: string
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+  /api/products:
+    x-swagger-router-controller: products
+    get:
+      operationId: getAllProducts
+      tags:
+      - products
+      summary: Get all products
+      description: Lists all the products available in the system
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Product'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+
+    post:
+      operationId: createProduct
+      tags:
+      - products
+      summary: Create new product
+      description: Create new product
+      produces:
+      - application/json
+      parameters:
+      - name: product
+        in: body
+        description: Product object
+        schema:
+            $ref: '#/definitions/Product'
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Product'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+          
+  /api/products/{id}:
+    x-swagger-router-controller: products
+    get:
+      operationId: getProduct
+      tags:
+      - products
+      summary: Get product by id
+      description: Get product by id
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: id of the product to retreive
+        required: true
+        type: string
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Product'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+      
+    delete:
+      operationId: deleteProduct
+      tags:
+      - products
+      summary: Delete product
+      description: Delete product by id
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: ID of the product to delete
+        required: true
+        type: string
+      responses:
+        200:
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Product'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+          
+  /api/products/{id}/reviews:
+    x-swagger-router-controller: products
+    get:
+      operationId: getAllReviews
+      tags:
+      - products
+      summary: Get all reviews for particular product
+      description: Get all reviews for particular product
+      produces:
+      - application/json
+      parameters:
+      - name: id
+        in: path
+        description: id of the product to retreive reviews for
+        required: true
+        type: string
+      responses:
+        200:
+          description: Successful operation
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Review'
+        400:
+          description: Invalid status value
+      security:
+        - api_key: []
+  /swagger:
+    x-swagger-pipe: swagger_raw
+# complex objects have schema definitions
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: x-auth
+    in: header
+definitions:
+  AuthResponse:
+    type: object
+    properties:
+      data:
+        $ref: '#/definitions/UserData'
+      token:
+        type: string
+    example:
+      value: {"data": {"user": { "email": "john@doe.com", "username": "John Doe" }, "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMmQwZGFhZTFlNjMxMzY4Y2NjYjMxZCIsImVtYWlsIjoiam9obkBkb2UuY29tIiwiaWF0IjoxNTEyOTAyMjkzfQ.gGKfecOEa0UOSkSPoPEZ_13eJNJwU8ka2mgB0Y9wy7I"}}
+  UserData:
+    type: object
+    properties:
+      email:
+        type: string
+      username:
+        type: string
+    example:
+      value: {"email": "john@doe.com", "username": "John Doe"}
+  EmailPassword:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+        format: password
+    example:
+      value: {"email": "john@doe.com", "password": "Welcome1"}
+  City:
+    type: object
+    properties:
+      name:
+        type: string
+      country:
+        type: string
+      capital:
+        type: boolean
+      location:
+        $ref: '#/definitions/Location'
+    example:
+      value: {"name": "Minsk", "country": "Belarus", "capital": true, "location": {"lat": 44.33, "long": 42.42}}
+  Location:
+    type: object
+    properties:
+      lat:
+        type: number
+        format: double
+      long:
+        type: number
+        format: double
+    example:
+      value: {"lat": 44.33, "long": 42.42}
+  Product:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+      lastModifiedDate:
+        type: string
+        format: date-time
+      reviews:
+        type: array
+        items:
+          $ref: '#/definitions/Review'
+    example:
+      value: {"name": "my product", "description": "some description", "reviews": []}
+  Review:
+    type: object
+    properties:
+      title:
+        type: string
+      author:
+        type: string
+      text:
+        type: string
+    example:
+      value: {"title": "my review", "author": "john", "text": "awasome product"}
+  User:
+    type: object
+    properties:
+      googleProfileId:
+        type: string
+      facebookProfileId:
+        type: string
+      twitterProfileId:
+        type: string
+      name:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+        format: password
+      tokens:
+        type: array
+        items:
+          type: string
+    example:
+      value: {"googleProfileId": "123sdfsfg4g3", "facebookProfileId": "1231fsdfw3f3efse3fedf", "twitterProfileId": '', "name": "johnDoe", "email": "john@doe.com", "password": "Welcome1", "tokens": ["asd32fefsef323ff"]}
